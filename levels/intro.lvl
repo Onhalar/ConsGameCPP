@@ -1,0 +1,13 @@
+[list:tiles]
+{"solid", "system", "8"}
+{"empty", "customEmpty", "1"}
+[end]
+
+[map:customTiles]
+customEmpty : {"--  --", "  --  ", "--  --"}
+player : {"  []  ", " +--+ ", " |  | "}
+[end]
+
+[StringType]
+lvl : "The border"
+[end]
