@@ -8,30 +8,45 @@
 #include <format>
 
 using namespace std;
+
 using Position = array<int, 2>;
 using Cell = vector<string>;
 using DataLayer = vector<Cell>;
 using Grid = vector<DataLayer>;
+using Size = array<unsigned int, 2>;
 
 Grid globalGridMap;
 Grid gridMap;
 
-array<int, 2> screenSize = {3, 3}; //y, x
-Position position = {1, 1}; //y, x
-array<int, 2> levelDimensions = {3, 3}; //y, x
-Position TileSize = {3, 3};
+Size screenSize = {3, 3}; //y, x
+Position position = {3, 3}; //y, x
+Size levelDimensions = {5, 6}; //y, x
+Size TileSize = {3, 3};
+
 map<string, Cell> systemTiles = {
     {"solid", {"######", "######", "######"}},
     {"empty", {"      ", "      ", "      "}},
     {"error", {"eeeeee", "eeeeee", "eeeeee"}}
 };
 map<string, Cell> userTiles = {
-    {"customEmpty", {"--  --", "  --  ", "--  --"}},
+    {"start", {"--  --", "  --  ", "--  --"}},
     {"player", {"  []  ", " +--+ ", " |  | "}}
 };
 DataLayer tiles = { // {type, fill, span}
-    {"solid", "system", "8"},
-    {"empty", "customEmpty", "1"}
+    {"solid", "system", "7"},
+    {"empty", "system", "4"},
+    {"solid", "system", "2"},
+    {"empty", "system", "1"},
+    {"solid", "system", "2"},
+    {"empty", "system", "1"},
+    {"solid", "system", "2"},
+    {"empty", "system", "1"},
+    {"solid", "system", "1"},
+    {"empty", "start", "1"},
+    {"empty", "system", "1"},
+    {"solid", "system", "2"},
+    {"empty", "system", "1"},
+    {"solid", "system", "4"}
 };
 
 string chainText(const string& str, const int& times) {
@@ -81,7 +96,7 @@ void BuildGrid() {
     gridMap = globalGridMap;
 }
 
-void render(const Position& cameraPosition = position, const array<int, 2>& camera = screenSize) {
+void render(const Position& cameraPosition = position, const Size& camera = screenSize) {
     int yTrasform = (camera[0] -1) / 2, xTrasform = (camera[0] -1) / 2;
     string buffer;
 
@@ -92,25 +107,31 @@ void render(const Position& cameraPosition = position, const array<int, 2>& came
     static int OldConsoleWdith = 0;
     string toCenter;
 
+    //generating white space to center the image
     if (OldConsoleWdith != consoleSize[1]) {
         OldConsoleWdith = consoleSize[1];
         int tilesDrawn = (min(static_cast<int>(gridMap[0].size()) - 1, position[1] + xTrasform) - max(0, position[1] - xTrasform)) + 1;
         toCenter = chainText(" ", (consoleSize[1] - tilesDrawn * TileSize[1] * 2) / 2);
     }
 
+    //rendering image
     for (int modY = -yTrasform; modY <= yTrasform; ++modY) {
-        for (int layer = 0; layer < TileSize[0]; ++layer) {
+        for (unsigned int layer = 0; layer < TileSize[0]; ++layer) {
             int Y = cameraPosition[0] + modY;
-            if (Y >= levelDimensions[0] || Y < 0) {
+            if (Y >= (int)levelDimensions[0] || Y < 0) {
                 continue;
             }
             buffer += toCenter;
             for (int modX = -xTrasform; modX <= xTrasform; ++modX) {
                 Position drawPosition = {Y, cameraPosition[1] + modX};
-                if (drawPosition[1] >= gridMap[0].size() || drawPosition[1] < 0) {
+                if (drawPosition[1] >= (int)gridMap[0].size() || drawPosition[1] < 0) {
                     continue;
                 }
                 else {
+                    if (drawPosition == position) {
+                        buffer += userTiles["player"][layer];
+                        continue;
+                    }
                     Cell cell = gridMap[drawPosition[0]][drawPosition[1]];
                     if (cell[1] == "system") {
                         buffer += systemTiles[cell[0]][layer];
