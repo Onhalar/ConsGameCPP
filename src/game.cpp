@@ -344,6 +344,9 @@ Event commandHandler() {
     else if (command[0] == "clear") {
         system("CLS");
     }
+    else if (command[0] = "exit") {
+        exit(0);
+    }
 
     clearLines(3, true);
 
