@@ -9,6 +9,12 @@
 #include <variant>
 #include <map>
 #include <set>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
+#include <algorithm>
+
+#include "../include/json.hpp"
 
 using namespace std;
 
@@ -19,11 +25,14 @@ using DataLayer = vector<Cell>;
 using Grid = vector<DataLayer>;
 using Size = array<unsigned int, 2>;
 using Event = map<string, variant<char, int>>;
+using CellMap = map<string, Cell>;
+
+using json = nlohmann::json;
 
 Grid globalGridMap;
 Grid gridMap;
 
-Size screenSize = {3, 3}; //y, x
+Size screenSize = {3, 5}; //y, x
 Position position = {3, 3}; //y, x
 Size levelDimensions = {5, 6}; //y, x
 Size TileSize = {3, 3};
@@ -43,31 +52,13 @@ map<char, Position> CompassDirection = {
     {'E', {0, 1}}
 };
 
-map<string, Cell> systemTiles = {
+CellMap systemTiles = {
     {"solid", {"######", "######", "######"}},
     {"empty", {"      ", "      ", "      "}},
     {"error", {"eeeeee", "eeeeee", "eeeeee"}}
 };
-map<string, Cell> userTiles = {
-    {"start", {"--  --", "  --  ", "--  --"}},
-    {"player", {"  []  ", " +--+ ", " |  | "}}
-};
-DataLayer tiles = { // {type, fill, span}
-    {"solid", "system", "7"},
-    {"empty", "system", "4"},
-    {"solid", "system", "2"},
-    {"empty", "system", "1"},
-    {"solid", "system", "2"},
-    {"empty", "system", "1"},
-    {"solid", "system", "2"},
-    {"empty", "system", "1"},
-    {"solid", "system", "1"},
-    {"empty", "start", "1"},
-    {"empty", "system", "1"},
-    {"solid", "system", "2"},
-    {"empty", "system", "1"},
-    {"solid", "system", "4"}
-};
+CellMap userTiles;
+DataLayer tiles;
 
 // *************** Helper functions ***************
 
@@ -106,7 +97,7 @@ void clearLines (const unsigned int& amount, const bool& beforeAfter = true) {
     if (!beforeAfter) {
         cout << format("\u001b[{}B", amount);
     }
-
+    
     cout.flush();
 }
 
@@ -141,7 +132,72 @@ string toLowerString(const string& str) {
     return result;
 }
 
+void loadToCellmap(const json& jsonData, const string& jsonIdex, CellMap& endVariable) {
+    for (auto customTile : jsonData[jsonIdex].items()) {
+        endVariable[customTile.key()] = customTile.value().get<Cell>();
+    }
+}
+
+void loadToDataLayer(const json& jsonData, const string& jsonIdex, DataLayer& endVariable) {
+    for (auto tile : jsonData[jsonIdex]) {
+        endVariable.push_back(tile.get<Cell>());
+    }
+}
+
 // *************** end of helper functions ***************
+
+string selectLevel(const string& levelDirectory = "../levels") {
+    vector<string> levelNames;
+    for (const auto& entry : filesystem::recursive_directory_iterator(levelDirectory)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            levelNames.push_back(entry.path().filename().stem().string());
+        }
+    }
+    while (true) {
+        string selectedName;
+        
+        system("cls");
+
+        cout << "Select a level:" << endl;
+
+        for (auto name : levelNames) {
+            cout << "\t>> " << name << endl;
+        }
+
+        cout << "\nEnter the name of the level to open: ";
+
+        getline(cin, selectedName);
+
+        if (find(levelNames.begin(), levelNames.end(), selectedName) != levelNames.end()) {
+            system("cls");
+            return selectedName;
+        }
+    }
+
+}
+
+bool loadLevel(const string& levelName, const string& levelDirectory = "../levels/", const string& fileExtension = ".json") {
+    string filePath = levelDirectory + levelName + fileExtension;
+
+    ifstream file(filePath);
+
+    json levelData; // << setw(4) << adds spaces to make it more readable for output
+
+    try {
+        levelData = json::parse(file);
+    }
+    catch (...) {
+        file.close();
+        return false;
+    }
+    
+    file.close();
+
+    loadToDataLayer(levelData, "level", tiles);
+    loadToCellmap(levelData, "user_tiles", userTiles);
+
+    return true;
+}
 
 void BuildGrid() {
     DataLayer row;
@@ -177,7 +233,7 @@ void BuildGrid() {
 }
 
 void render(const Position& cameraPosition = position, const Size& camera = screenSize) {
-    int yTrasform = (camera[0] -1) / 2, xTrasform = (camera[0] -1) / 2;
+    int yTrasform = (camera[0] -1) / 2, xTrasform = (camera[1] -1) / 2;
     string buffer;
 
     auto consoleSize = GetConsoleSize();
@@ -297,6 +353,8 @@ Event commandHandler() {
 int main() {
     //initializing settings
     system("");
+    cout << selectLevel();
+    loadLevel(selectLevel());
     BuildGrid();
 
     //event loop
