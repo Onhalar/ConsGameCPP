@@ -1,0 +1,22 @@
+{
+    "level": [
+        ["solid", "system", "7"],
+        ["empty", "system", "4"],
+        ["solid", "system", "2"],
+        ["empty", "system", "1"],
+        ["solid", "system", "2"],
+        ["empty", "system", "1"],
+        ["solid", "system", "2"],
+        ["empty", "system", "1"],
+        ["solid", "system", "1"],
+        ["empty", "start", "1"],
+        ["empty", "system", "1"],
+        ["solid", "system", "2"],
+        ["empty", "system", "1"],
+        ["solid", "system", "4"]
+    ],
+    "user_tiles": {
+        "start": ["--  --", "  --  ", "--  --"],
+        "player": ["  []  ", " +--+ ", " |  | "]
+    }
+}

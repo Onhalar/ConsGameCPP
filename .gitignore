@@ -2,5 +2,4 @@
 .vscode/
 *.exe
 include/
-levels/
 toDo*
